@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🧠 AI Prompt Queue System
 
 > **Secfolio Assessment — NIST University | April 20, 2026**
@@ -267,3 +268,7 @@ Expected throughput: **~300 LLM calls/min**, unlimited cache-hit throughput.
 ## License
 
 MIT
+=======
+# Prompt-Processing-System
+A scalable backend system that processes high-volume AI prompts using asynchronous task queues, built with FastAPI and Celery to ensure reliability and performance.
+>>>>>>> a410e551a5b23dd4e46fd8c9694243ee0634bf94
