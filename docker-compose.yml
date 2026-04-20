@@ -1,0 +1,73 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis/redis-stack:7.2.0-v9
+    ports:
+      - "6379:6379"
+      - "8001:8001"   # RedisInsight UI
+    volumes:
+      - redis_data:/data
+    command: >
+      redis-server
+      --appendonly yes
+      --loadmodule /opt/redis-stack/lib/rejson.so
+      --loadmodule /opt/redis-stack/lib/redisearch.so
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    env_file: .env
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - WORKER_CONCURRENCY=4
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      replicas: 2        # 2 worker processes × 4 concurrency = 8 parallel slots
+    restart: unless-stopped
+
+  bull-board:
+    image: deadly0/bull-board:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docs/prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - api
+
+volumes:
+  redis_data:
